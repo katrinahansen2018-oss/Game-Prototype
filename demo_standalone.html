@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Palliative Care Learning Game - Demo</title>
+  <style>
+    :root {
+      --color-bg: #fafbfc;
+      --color-surface: #ffffff;
+      --color-border: #d7dbe0;
+      --color-primary: #21808d;
+      --color-accent: #ffa726;
+      --color-secondary: #946c3c;
+      --color-disabled: #b8c2cc;
+      --color-success: #33c489;
+      --color-error: #f25d5c;
+      --color-gray-text: #666b73;
+      --color-dark: #262626;
+      --color-highlight: #e9edf2;
+      --color-hud-competency: #2997d6;
+      --color-hud-resource: #7a48c1;
+      --color-hud-mastery: #f47c31;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: var(--color-bg);
+      color: var(--color-dark);
+      min-height: 100vh;
+    }
+    .demo-banner {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 20px;
+      text-align: center;
+      font-size: 0.95em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .demo-banner strong { font-weight: 600; }
+    .app-container {
+      max-width: 700px;
+      margin: 24px auto;
+      padding: 32px 20px 36px 20px;
+      background: var(--color-surface);
+      box-shadow: 0 4px 24px rgba(98,108,113,0.06);
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+    }
+    .center { text-align: center; }
+    h1, h2, h3 { margin: 0 0 16px 0; font-weight: 600; }
+    h1 { font-size: 2.1rem; }
+    .spacer { height: 24px; }
+    .ui-btn {
+      display: inline-block;
+      min-width: 120px;
+      padding: 10px 32px;
+      margin: 6px 5px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      color: #fff;
+      background: var(--color-primary);
+      font-weight: 500;
+      transition: background 0.14s;
+    }
+    .ui-btn:hover:not(:disabled) { background: #1a6570; }
+    .ui-btn:disabled, .ui-btn--disabled {
+      background: var(--color-disabled);
+      cursor: not-allowed;
+      color: #f2f2f2;
+    }
+    .ui-btn--accent { background: var(--color-accent); }
+    .ui-btn--accent:hover:not(:disabled) { background: #fb8c00; }
+    .ui-btn--secondary { background: var(--color-secondary); }
+    .ui-btn--secondary:hover:not(:disabled) { background: #7d5a31; }
+    .ui-btn--hud { background: none; color: var(--color-accent); border: 0; font-size: 1rem; font-weight: 600; }
+    .tab-selectors { display: flex; gap: 8px; margin-bottom: 24px; }
+    .tab-btn {
+      background: var(--color-highlight);
+      color: var(--color-gray-text);
+      border: 1px solid var(--color-border);
+      border-radius: 7px 7px 0 0;
+      padding: 8px 20px 6px 20px;
+      margin-bottom: -1px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: background 0.12s;
+      font-size: 1rem;
+    }
+    .tab-btn--active {
+      background: var(--color-surface);
+      border-bottom: 3px solid var(--color-primary);
+      color: var(--color-primary);
+    }
+    .hub-map {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin: 20px 0 28px 0;
+    }
+    .tile {
+      position: relative;
+      width: 98px;
+      height: 84px;
+      background: var(--color-highlight);
+      border: 2.5px solid var(--color-border);
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.03rem;
+      font-weight: 500;
+      color: var(--color-gray-text);
+      transition: border 0.15s, background 0.15s;
+      cursor: pointer;
+    }
+    .tile--locked {
+      background: #f4f4f4;
+      border: 2.5px dashed var(--color-disabled);
+      color: var(--color-disabled);
+      cursor: not-allowed;
+    }
+    .tile--unlocked {
+      background: #f5fafb;
+      color: var(--color-primary);
+      border: 2.5px solid var(--color-primary);
+    }
+    .tile--unlocked:hover {
+      background: #e6f4f7;
+      transform: translateY(-2px);
+    }
+    .tile--completed {
+      background: #e8f7ed;
+      border: 2.5px solid var(--color-success);
+      color: var(--color-success);
+    }
+    .tile .icon {
+      font-size: 1.7em;
+      margin-bottom: 4px;
+      display: block;
+    }
+    .tile .checkmark { color: var(--color-success); }
+    .tile .padlock { color: var(--color-disabled); }
+    .point-hud {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 22px;
+      background: var(--color-highlight);
+      border-radius: 10px;
+      padding: 10px 0 10px 0;
+      margin-bottom: 18px;
+    }
+    .point-token {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-width: 70px;
+    }
+    .point-token span { font-size: 1.1em; font-weight: 600; }
+    .point-competency { color: var(--color-hud-competency);}
+    .point-resource { color: var(--color-hud-resource);}
+    .point-mastery { color: var(--color-hud-mastery); }
+    .case-slide {
+      background: var(--color-highlight);
+      padding: 26px 22px 26px 22px;
+      border-radius: 10px;
+      margin: 18px 0 20px 0;
+    }
+    .decision-buttons {
+      display: flex;
+      gap: 12px;
+      margin: 18px 0 6px;
+      flex-wrap: wrap;
+    }
+    .decision-btn {
+      background: var(--color-accent);
+      border: none;
+      border-radius: 6px;
+      padding: 10px 24px;
+      font-size: 1rem;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+    .decision-btn:hover:not(:disabled) { background: #fb8c00; }
+    .decision-btn:disabled { background: var(--color-disabled); cursor: not-allowed;}
+    .case-award {
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .shop-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin: 10px 0 24px 0;
+      justify-content: center;
+    }
+    .shop-card {
+      background: var(--color-surface);
+      border-radius: 9px;
+      border: 1.5px solid var(--color-border);
+      box-shadow: 0px 4px 8px #b8b8bb18;
+      width: 190px;
+      padding: 18px 14px 17px 14px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      text-align: center;
+    }
+    .shop-icon { font-size: 2em; margin-bottom: 7px; }
+    .shop-title { font-weight: 550; font-size: 1.05em; }
+    .shop-cost {
+      margin: 9px 0 14px 0;
+      font-size: 0.98em;
+      color: var(--color-hud-resource);
+    }
+    .shop-btn {
+      background: var(--color-hud-resource);
+      color: #fff;
+      border: 0;
+      border-radius: 5px;
+      padding: 8px 20px;
+      font-size: 1em;
+      font-weight: 500;
+      cursor: pointer;
+    }
+    .shop-btn:hover:not(:disabled) { background: #6839a8; }
+    .shop-btn:disabled, .shop-card--disabled .shop-btn {
+      background: var(--color-disabled);
+      color: #eee;
+      cursor: not-allowed;
+    }
+    .shop-card--purchased {
+      border: 2.5px solid var(--color-success);
+      background: #e8f7ed;
+    }
+    .shop-purchased-label {
+      position: absolute;
+      top: 10px; right: 12px;
+      color: var(--color-success);
+      font-weight: 600;
+      font-size: 0.97em;
+      background: #e8f7ed;
+      padding: 4px 9px;
+      border-radius: 100px;
+      border: 1px solid var(--color-success);
+    }
+    .wrapup-text {
+      font-size: 1.1em;
+      margin-bottom: 18px;
+      line-height: 1.55;
+    }
+    .icon { display: inline-block; vertical-align: middle; }
+    .icon-mountain { font-size: 2.5em; color: #90caf9; margin: 6px 0 10px 0; }
+    .icon-manager { font-size: 2.2em; color: #b388ff; margin: 3px 0 9px 0;}
+    .icon-coin { color: var(--color-hud-resource); font-size: 1.22em; margin-right: 2px; }
+    .disabled-link, .shop-card--disabled { filter: grayscale(1); }
+    .wrapup-score {
+      background: var(--color-highlight);
+      color: var(--color-hud-mastery);
+      border-radius: 7px;
+      padding: 8px 18px;
+      font-size: 1.15em;
+      font-weight: 600;
+      margin-bottom: 12px;
+      display: inline-block;
+    }
+    .hub-nav {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin: 16px 0 0 0;
+    }
+    .hub-nav .ui-btn { min-width: 110px; }
+    .tier-unlock {
+      background: #fff1cb;
+      color: #b2761b;
+      border-radius: 6px;
+      font-size: 0.99em;
+      padding: 8px 16px;
+      display: inline-block;
+      margin-top: 4px;
+      border: 1px solid #ffeeb4;
+    }
+    .save-indicator {
+      position: fixed;
+      top: 60px;
+      right: 20px;
+      background: var(--color-success);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    .save-indicator.show { opacity: 1; }
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196f3;
+      padding: 12px 16px;
+      margin: 16px 0;
+      border-radius: 4px;
+      font-size: 0.95em;
+    }
+    @media (max-width: 900px) {
+      .hub-map { grid-template-columns: repeat(2, 1fr); }
+      .tile { width: 98vw; max-width: 400px;}
+    }
+    @media (max-width: 600px) {
+      .app-container { padding:16px 12px 30px 12px;}
+      .tile { width: 88vw; max-width: 345px; font-size: 1.03em;}
+      .decision-buttons { flex-direction: column; }
+      .decision-btn { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-banner">
+    📺 <strong>DEMO VERSION</strong> - Progress saves to your browser only (localStorage) | Full Moodle integration available
+  </div>
+  <div class="save-indicator" id="saveIndicator">Progress Saved Locally ✓</div>
+  <div class="app-container" id="root-app"></div>
+  
+  <script>
+    /**
+     * Standalone Demo Version - Palliative Care Learning Game
+     * Uses localStorage for progress (browser-only, no Moodle integration)
+     */
+    
+    const CASES = [
+      {id: 1}, {id: 2}, {id: 3}, {id: 4}, {id: 5},
+      {id: 6}, {id: 7}, {id: 8}, {id: 9}, {id: 10},
+    ];
+    
+    const SHOP_ITEMS = [
+      { id: 1, name: "Extra Staff",      cost: 3,  icon: "👩‍⚕️" },
+      { id: 2, name: "Advanced Pain Meds", cost: 4,  icon: "💊" },
+      { id: 3, name: "Consult Token",      cost: 2, icon: "🎫" },
+    ];
+    
+    let APP_STATE = {
+      version: null,
+      screen: 0,
+      points: { competency: 0, resource: 0, mastery: 0 },
+      caseStates: Array(10).fill('locked'),
+      unlockedTier: 1,
+      shopPurchases: [],
+      currentCase: null,
+      caseFeedback: null,
+      startTime: null,
+      caseStartTimes: {},
+      casesAttempted: 0,
+      correctDecisions: 0,
+    };
+    
+    // LocalStorage functions
+    function saveState() {
+      try {
+        localStorage.setItem('palliative_game_demo', JSON.stringify(APP_STATE));
+        showSaveIndicator();
+      } catch (e) {
+        console.error('Error saving to localStorage:', e);
+      }
+    }
+    
+    function loadState() {
+      try {
+        const saved = localStorage.getItem('palliative_game_demo');
+        if (saved) {
+          APP_STATE = JSON.parse(saved);
+          console.log('Progress loaded from localStorage');
+        }
+      } catch (e) {
+        console.error('Error loading from localStorage:', e);
+      }
+    }
+    
+    function showSaveIndicator() {
+      const indicator = document.getElementById('saveIndicator');
+      if (indicator) {
+        indicator.classList.add('show');
+        setTimeout(() => indicator.classList.remove('show'), 2000);
+      }
+    }
+    
+    function resetAppState(versionKey) {
+      APP_STATE = {
+        version: versionKey,
+        screen: 1,
+        points: { competency: 0, resource: 0, mastery: 0 },
+        caseStates: ['unlocked', 'locked', 'locked', 'locked', 'locked', 'locked', 'locked', 'locked', 'locked', 'locked'],
+        unlockedTier: 1,
+        shopPurchases: [],
+        currentCase: null,
+        caseFeedback: null,
+        startTime: Date.now(),
+        caseStartTimes: {},
+        casesAttempted: 0,
+        correctDecisions: 0,
+      };
+      saveState();
+      renderApp();
+    }
+    
+    function setScreen(n) {
+      APP_STATE.screen = n;
+      APP_STATE.currentCase = null;
+      APP_STATE.caseFeedback = null;
+      saveState();
+      renderApp();
+    }
+    
+    function selectTab(tab) {
+      document.getElementById('intro-tabs-zip').classList.toggle('tab-btn--active', tab === 'zipline');
+      document.getElementById('intro-tabs-apex').classList.toggle('tab-btn--active', tab === 'apex');
+      document.getElementById('intro-zip').style.display = (tab === 'zipline') ? '' : 'none';
+      document.getElementById('intro-apex').style.display = (tab === 'apex') ? '' : 'none';
+    }
+    
+    function toCase(idx) {
+      APP_STATE.screen = 4;
+      APP_STATE.currentCase = idx;
+      APP_STATE.caseFeedback = null;
+      APP_STATE.caseStartTimes[idx] = Date.now();
+      saveState();
+      renderApp();
+    }
+    
+    function unlockNextCase(idx) {
+      for (let i = idx + 1; i < 10; ++i) {
+        if (APP_STATE.caseStates[i] === 'locked') {
+          APP_STATE.caseStates[i] = 'unlocked';
+          break;
+        }
+      }
+    }
+    
+    function handleCaseDecision(option) {
+      const isCorrect = (option === 'B');
+      APP_STATE.caseFeedback = isCorrect ? 'correct' : 'incorrect';
+      APP_STATE.casesAttempted++;
+      
+      if (isCorrect) {
+        APP_STATE.correctDecisions++;
+        APP_STATE.points.competency += 2;
+        APP_STATE.points.resource += (APP_STATE.version === 'apex' ? 1 : 0);
+        if (APP_STATE.currentCase === 9) {
+          APP_STATE.points.mastery += 5;
+        }
+      }
+      
+      saveState();
+      renderApp();
+    }
+    
+    function handleCaseComplete() {
+      APP_STATE.caseStates[APP_STATE.currentCase] = 'completed';
+      unlockNextCase(APP_STATE.currentCase);
+      
+      if (APP_STATE.points.competency >= 20) APP_STATE.unlockedTier = 3;
+      else if (APP_STATE.points.competency >= 10) APP_STATE.unlockedTier = 2;
+      
+      saveState();
+      renderApp();
+    }
+    
+    function tryShopItem(itemId, cost) {
+      if (APP_STATE.shopPurchases.includes(itemId)) return;
+      if (APP_STATE.points.resource < cost) return;
+      
+      APP_STATE.shopPurchases.push(itemId);
+      APP_STATE.points.resource -= cost;
+      saveState();
+      renderApp();
+    }
+    
+    function renderApp() {
+      const root = document.getElementById('root-app');
+      switch(APP_STATE.screen) {
+        case 0:
+          root.innerHTML = renderBootScreen();
+          document.getElementById('btn-zipline').onclick = () => resetAppState('zipline');
+          document.getElementById('btn-apex').onclick = () => resetAppState('apex');
+          break;
+        case 1:
+          root.innerHTML = renderIntroScreen();
+          document.getElementById('intro-tabs-zip').onclick = () => selectTab('zipline');
+          document.getElementById('intro-tabs-apex').onclick = () => selectTab('apex');
+          document.getElementById('intro-continue').onclick = () => setScreen(3);
+          break;
+        case 3:
+          root.innerHTML = renderHubScreen();
+          Array.from(document.querySelectorAll('.tile')).forEach((el, i) => {
+            if (APP_STATE.caseStates[i] === 'unlocked') el.onclick = () => toCase(i);
+          });
+          document.getElementById('btn-shop').onclick = () => setScreen(5);
+          document.getElementById('btn-intro').onclick = () => setScreen(1);
+          document.getElementById('btn-wrapup').onclick = () => setScreen(6);
+          break;
+        case 4:
+          root.innerHTML = renderCaseTemplate();
+          if (!APP_STATE.caseFeedback) {
+            Array.from(document.getElementsByClassName('decision-btn')).forEach((btn) =>
+              btn.onclick = () => handleCaseDecision(btn.dataset.opt)
+            );
+          } else {
+            document.getElementById('btn-case-next').onclick = () => { handleCaseComplete(); setScreen(3); }
+          }
+          break;
+        case 5:
+          root.innerHTML = renderShopScreen();
+          SHOP_ITEMS.forEach((item) => {
+            const btnEl = document.getElementById('shopbuy-' + item.id);
+            if (btnEl && !APP_STATE.shopPurchases.includes(item.id) && APP_STATE.points.resource >= item.cost) {
+              btnEl.onclick = () => tryShopItem(item.id, item.cost);
+            }
+          });
+          document.getElementById('btn-shop-hub').onclick = () => setScreen(3);
+          break;
+        case 6:
+          root.innerHTML = renderWrapUpScreen();
+          document.getElementById('btn-exit').onclick = () => setScreen(0);
+          break;
+        default:
+          root.innerHTML = '<div>Error loading screen.</div>';
+      }
+    }
+    
+    function renderBootScreen() {
+      const hasSavedProgress = localStorage.getItem('palliative_game_demo') !== null;
+      return `
+        <h1 class="center">Palliative Care Learning Game</h1>
+        <div class="info-box">
+          <strong>ℹ️ Demo Mode:</strong> This is a standalone demo. Your progress saves to this browser only. 
+          The full Moodle version tracks all users centrally and syncs to the gradebook.
+        </div>
+        <div class="center">
+          <p style="font-size: 1.1em; margin-bottom: 20px;">Choose your learning path:</p>
+          <button class="ui-btn ui-btn--accent" id="btn-zipline">Start ZIP Line Version</button>
+          <button class="ui-btn ui-btn--secondary" id="btn-apex">Start APEX Manager Version</button>
+        </div>
+        ${hasSavedProgress ? `
+          <div class="center" style="color: var(--color-success); font-size: 1.05em; margin-top: 16px;">
+            ✓ Saved progress detected - will resume where you left off
+          </div>
+        ` : ''}
+      `;
+    }
+    
+    function renderIntroScreen() {
+      const isZipline = APP_STATE.version === 'zipline';
+      return `
+      <h2 class="center">${isZipline ? 'ZIP Line Discovery Game' : 'APEX Manager Simulation'}</h2>
+      <div class="tab-selectors center">
+        <button class="tab-btn${isZipline ? ' tab-btn--active' : ''}" id="intro-tabs-zip">ZIP Line Intro</button>
+        <button class="tab-btn${!isZipline ? ' tab-btn--active' : ''}" id="intro-tabs-apex">APEX Manager Intro</button>
+      </div>
+      <div id="intro-zip" style="${isZipline ? '' : 'display:none'}">
+        <div class="center icon icon-mountain">🏔️</div>
+        <div style="margin-bottom:18px;">
+          <b>ZIP Line Discovery Game</b> (Student Path)
+          <div style="margin-top:4px;">Embark on a palliative-care discovery journey through challenging scenarios.</div>
+          <p style="font-size:1.07em; margin-top:10px;">
+            <b>Story Summary:</b><br>
+            You are tasked to help a team complete a palliative-care journey over challenging terrain.
+            Unlock cases, gain points, and overcome simulated patient, family, or system challenges.
+          </p>
+        </div>
+      </div>
+      <div id="intro-apex" style="${isZipline ? 'display:none' : ''}">
+        <div class="center icon icon-manager">👨‍💼</div>
+        <div style="margin-bottom:18px;">
+          <b>APEX Manager Simulation</b> (Manager Path)
+          <div style="margin-top:4px;">Solve management challenges using strategic resource allocation.</div>
+          <p style="font-size:1.07em; margin-top:10px;">
+            <b>Scenario Summary:</b><br>
+            Step into the shoes of a palliative program manager faced with staffing, supply, and systems dilemmas.
+            Points simulate competency and resource management choices.
+          </p>
+        </div>
+      </div>
+      <div class="spacer"></div>
+      <div class="center">
+        <button class="ui-btn" id="intro-continue">Go to Main Hub Map</button>
+      </div>
+      `;
+    }
+    
+    function renderHubScreen() {
+      function tileState(i) {
+        const s = APP_STATE.caseStates[i];
+        if (s === 'completed') return 'tile tile--completed';
+        else if (s === 'unlocked') return 'tile tile--unlocked';
+        else return 'tile tile--locked';
+      }
+      
+      function tileIcon(i) {
+        if (APP_STATE.caseStates[i] === 'completed')
+          return '<span class="icon checkmark">✔️</span>';
+        if (APP_STATE.caseStates[i] === 'locked')
+          return '<span class="icon padlock">🔒</span>';
+        return '<span class="icon" aria-label="case tile"></span>';
+      }
+      
+      const tierText = [ 
+        '<b>Tier 1</b> unlocked at start.',
+        '<b>Tier 2</b> unlocks at <b>Competency ≥ 10</b>',
+        '<b>Tier 3</b> unlocks at <b>Competency ≥ 20</b>'
+      ];
+      
+      function tierStyle(idx) {
+        if (idx + 1 < APP_STATE.unlockedTier) return 'color:var(--color-success);';
+        if (idx + 1 === APP_STATE.unlockedTier) return 'font-weight:bold;color:var(--color-primary);';
+        return 'color:var(--color-disabled);';
+      }
+      
+      const allComplete = APP_STATE.caseStates.every(s => s === 'completed');
+      const completedCount = APP_STATE.caseStates.filter(s => s === 'completed').length;
+      
+      return `
+      <h3 class="center">${APP_STATE.version === 'zipline' ? 'ZIP Line Main Hub Map' : 'APEX Manager Hub Map'}</h3>
+      ${renderHUDPoints()}
+      <div class="center" style="margin-bottom: 12px;">
+        <strong>Progress:</strong> ${completedCount}/10 Cases Completed
+      </div>
+      <div class="hub-map">
+        ${
+          CASES.map((c, i) => `
+            <div class="${tileState(i)}" title="Case ${String(i + 1).padStart(2,'0')}"
+              aria-disabled="${APP_STATE.caseStates[i]!=='unlocked'}">
+              ${tileIcon(i)}
+              Case ${String(i + 1).padStart(2, '0')}
+            </div>
+          `).join('')
+        }
+      </div>
+      <div class="center" style="margin:18px 0 7px 0;">
+        ${tierText.map((txt, i) => 
+          `<span class="tier-unlock" style="${tierStyle(i)}">${txt}</span>`
+        ).join(' ')}
+      </div>
+      <div class="hub-nav">
+        <button class="ui-btn ui-btn--hud" id="btn-shop">Shop</button>
+        <button class="ui-btn ui-btn--hud" id="btn-intro">Return to Intro</button>
+        <button class="ui-btn ui-btn--hud" id="btn-wrapup" ${allComplete ? '' : 'disabled'}>Wrap-Up</button>
+      </div>
+      <div style="margin-top:17px;" class="center">
+        <b>States:</b> 
+        <span style="margin-left:8px;">
+          <span style="color:var(--color-disabled);">🔒 Locked</span>
+          <span style="margin-left:12px;color:var(--color-primary);">🟦 Unlocked</span>
+          <span style="margin-left:12px;color:var(--color-success);">✔️ Completed</span>
+        </span>
+      </div>
+      `;
+    }
+    
+    function renderHUDPoints() {
+      const p = APP_STATE.points;
+      return `
+        <div class="point-hud">
+          <div class="point-token point-competency">
+            <span title="Competency Points">🧩</span>
+            <span>${p.competency}</span><div style="font-size:0.86em;">Competency</div>
+          </div>
+          <div class="point-token point-resource">
+            <span title="Resource Points">🪙</span>
+            <span>${p.resource}</span><div style="font-size:0.86em;">Resource</div>
+          </div>
+          <div class="point-token point-mastery">
+            <span title="Mastery Points">🏆</span>
+            <span>${p.mastery}</span><div style="font-size:0.86em;">Mastery</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function renderCaseTemplate() {
+      const n = (APP_STATE.currentCase + 1);
+      const isManager = APP_STATE.version === 'apex';
+      return `
+        <div class="case-slide">
+          <h3>${isManager ? 'Manager Scenario' : 'ZIP Line Case'} ${String(n).padStart(2,'0')}</h3>
+          <div style="margin-bottom:12px;">
+            <b>Case ${String(n).padStart(2,'0')} placeholder title</b>
+            <div style="margin-top:5px;">
+              ${
+                isManager
+                  ? `<span style="color:#7a48c1;">Placeholder managerial scenario:</span> You must allocate limited resources and make a staffing decision today.`
+                  : `<span style="color:#21808d;">Placeholder ZIP Line story:</span> A family needs urgent symptom management support while on the journey.`
+              }
+            </div>
+          </div>
+          <button class="ui-btn ui-btn--accent" id="btn-casestart" style="margin-bottom:8px;" onclick="document.getElementById('decision-section').style.display='block'">Begin Case</button>
+        </div>
+        <div class="case-slide" id="decision-section" style="display:${APP_STATE.caseFeedback ? 'block' : 'none'}">
+          <b>Decision Question Placeholder Text Here:</b>
+          <div style="margin: 12px 0 10px 0;">Choose the best action for the scenario.</div>
+          <div class="decision-buttons">
+            <button class="decision-btn" data-opt="A" ${APP_STATE.caseFeedback ? 'disabled' : ''}>Option A</button>
+            <button class="decision-btn" data-opt="B" ${APP_STATE.caseFeedback ? 'disabled' : ''}>Option B</button>
+            <button class="decision-btn" data-opt="C" ${APP_STATE.caseFeedback ? 'disabled' : ''}>Option C</button>
+          </div>
+          ${
+            APP_STATE.caseFeedback ? `
+              <div class="case-award" style="color:${APP_STATE.caseFeedback==='correct' ? 'var(--color-success)' : 'var(--color-error)'};">
+                ${APP_STATE.caseFeedback === 'correct'
+                  ? '✓ Correct! +2 Competency Points'
+                  : '✗ Incorrect! +0 Competency Points'}
+              </div>
+              <div style="margin-top:13px;">
+                <button class="ui-btn" id="btn-case-next">Return to Hub</button>
+              </div>
+            ` : ''
+          }
+        </div>
+      `;
+    }
+    
+    function renderShopScreen() {
+      function cardClass(item) {
+        if (APP_STATE.shopPurchases.includes(item.id)) return "shop-card shop-card--purchased";
+        if (APP_STATE.points.resource < item.cost) return "shop-card shop-card--disabled";
+        return "shop-card";
+      }
+      
+      function buyButton(item) {
+        if (APP_STATE.shopPurchases.includes(item.id))
+          return `<span class="shop-purchased-label">Purchased</span>`;
+        return `<button class="shop-btn" id="shopbuy-${item.id}" ${APP_STATE.points.resource<item.cost ? 'disabled' : ''}>Buy</button>`;
+      }
+      
+      return `
+        <h2 class="center">Resource Shop</h2>
+        <div class="center" style="margin-bottom:12px;font-size:1.1em;color:#7a48c1;">
+          Spend Resource Points to purchase items that enhance your capabilities.
+        </div>
+        ${renderHUDPoints()}
+        <div class="shop-grid">
+          ${SHOP_ITEMS.map(item => `
+            <div class="${cardClass(item)}">
+              <div class="shop-icon">${item.icon||'⭐'}</div>
+              <div class="shop-title">${item.name}</div>
+              <div class="shop-cost"><span class="icon-coin">🪙</span>Cost: ${item.cost} Resource</div>
+              ${buyButton(item)}
+            </div>
+          `).join('')}
+        </div>
+        <div class="center">
+          <button class="ui-btn" id="btn-shop-hub">Return to Hub</button>
+        </div>
+      `;
+    }
+    
+    function renderWrapUpScreen() {
+      const isManager = APP_STATE.version === 'apex';
+      const accuracy = APP_STATE.casesAttempted > 0 
+        ? Math.round((APP_STATE.correctDecisions / APP_STATE.casesAttempted) * 100) 
+        : 0;
+      
+      return `
+        <h2 class="center">Course Wrap-Up</h2>
+        <div class="center">
+          <div class="wrapup-score">
+            ${isManager 
+              ? `Mastery Points: <b>${APP_STATE.points.mastery}</b>`
+              : `Competency Points: <b>${APP_STATE.points.competency}</b>` 
+            }
+          </div>
+          <div style="margin-bottom: 12px;">
+            <strong>Decision Accuracy:</strong> ${accuracy}%
+          </div>
+        </div>
+        <div class="wrapup-text">
+          ${
+            isManager
+              ? `<div>You achieved <b>${APP_STATE.points.mastery}</b> Mastery Points with ${accuracy}% accuracy.</div>
+                <p>You demonstrated critical thinking, effective leadership, and resource allocation across palliative care management scenarios.</p>`
+              : `<div>You completed the ZIP Line adventure with <b>${APP_STATE.points.competency}</b> Competency Points.</div>
+                <p>You've mastered key palliative-care challenges with ${accuracy}% decision accuracy.</p>`
+          }
+        </div>
+        <div class="info-box">
+          <strong>📊 Demo Limitation:</strong> In the full Moodle version, this score would be automatically 
+          sent to the gradebook and visible to your instructor.
+        </div>
+        <div class="center">
+          <button class="ui-btn ui-btn--secondary" id="btn-exit">Exit Course</button>
+        </div>
+      `;
+    }
+    
+    // Initialize
+    loadState();
+    renderApp();
+  </script>
+</body>
+</html>
